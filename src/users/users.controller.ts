@@ -17,7 +17,6 @@ import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 require('dotenv').config();
 
 @Controller('users')
@@ -42,8 +41,10 @@ export class UsersController {
       password: hashedPassword,
     });
   }
-
-  @Get()
+  //  Methode GET 
+  //@desc: methode to get all users 
+  //Path "/users"
+  @Get("users")
   @UseGuards(AuthGuard('jwt'))
   async getAll() {
     const users = await this.userService.getAll();

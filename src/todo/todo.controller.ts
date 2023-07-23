@@ -17,7 +17,7 @@ export class TodoController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: number, @Body() todo: Todo): Promise<Todo> {
+  async update(@Param('id') id: string, @Body() todo: Todo): Promise<Todo> {
     todo.id = id;
     return this.todoService.update(todo);
   }
