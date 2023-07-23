@@ -1,0 +1,189 @@
+- after creating project
+- install postgres orm
+
+a- installer (@nestjs/typeorm) pour integrer dans app.module
+b- Installez le module PostgreSQL ORM (typeorm pg)
+
+---
+
+1.
+
+- initialize user module
+
+* nest g service user --no-spec
+* nest g controller user --no-spec
+* nest g module user --no-spec
+*** or nest g ressource user 
+
+---
+
+
+--------------------------------------------------------------------------------
+CONFIGURATION CONNEXION DB
+--------------------------------------------------------------------------------
+
+Il faut tout d'abord configurer la connexion avec la base de données
+*installer @nestjs/config
+
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('dotenv').config();
+
+export const config: TypeOrmModuleOptions = {
+  type: 'postgres',
+  host: process.env.POSTGRES_HOST,
+  port: parseInt(<string>process.env.POSTGRES_PORT),
+  username: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DATABASE,
+  autoLoadEntities: true,
+  synchronize: true,
+};
+
+// app.module.ts 
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UserModule } from './user/user.module';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { config } from './config/orm.config';
+
+@Module({
+  imports: [
+    UserModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot(config),
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+
+
+--------------------------------------------------------------------------------
+ENTITY
+--------------------------------------------------------------------------------
+
+2.
+
+- create entity
+
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity()
+export class UserEntity {
+@PrimaryGeneratedColumn()
+id: number;
+@Column({ default: '' })
+name: string;
+@Column({ default: '' })
+email: string;
+@Column({ default: '' })
+password: string;
+@Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+createdAt: Date;
+}
+
+--------------------------------------------------------------------------------
+SERVICE
+--------------------------------------------------------------------------------
+
+
+- update service
+  using typeorm and repository
+
+
+--------------------------------------------------------------------------------
+DTO
+--------------------------------------------------------------------------------
+
+- create dto (on utilise des objets DTO (Data Transfer Objects) pour gérer la validation des données d'entrée et de sortie d'une application.)
+
+* installer class-validator
+
+import { IsNotEmpty, Length } from 'class-validator';
+
+export class CreateUserDto {
+  @IsNotEmpty({ message: 'User should have a name' })
+  @Length(3, 255)
+  name: string;
+  @IsNotEmpty({ message: 'User should have an email' })
+  @Length(3, 255)
+  email: string;
+  @IsNotEmpty({ message: 'User should have a password' })
+  @Length(3, 255)
+  password: string;
+}
+
+--------------------------------------------------------------------------------
+CONTROLLER
+--------------------------------------------------------------------------------
+
+DTO ET CONTROLLER 
+ValidationPipe est une fonctionnalité fournie par le module @nestjs/common de Nest.js. Il s'agit d'un type de pipe qui permet de valider automatiquement les données entrantes dans une application Nest.js en fonction des annotations de validation définies dans les classes DTO (Data Transfer Object).
+En utilisant ValidationPipe, vous pouvez vous assurer que les données entrantes sont conformes aux règles de validation définies dans les classes DTO, et rejeter les demandes invalides avant qu'elles ne soient traitées par votre application. Cela peut aider à prévenir les erreurs et à améliorer la qualité de votre application.
+ValidationPipe utilise la bibliothèque de validation class-validator pour valider les données entrantes. Cette bibliothèque prend en charge une grande variété de règles de validation telles que la vérification de la longueur, du format et de la cohérence des données.
+
+@Post()
+  @UsePipes(ValidationPipe)
+  create(@Body() user: CreateUserDto): Promise<CreateUserDto> {
+    return this.userService.create(user);
+  }
+  POUR UTILISER CREATEUSERDTO POUR VALIDER LE TYPE DES DONNÉES entrantes
+  
+------> COMME INTERCEPTOR
+
+--------------------------------------------------------------------------------
+AUTH
+--------------------------------------------------------------------------------
+
+// save hash of password
+
+@nestjs/passport est un module Nest.js qui fournit une infrastructure pour l'authentification basée sur des stratégies.
+passport est un module Node.js qui fournit un middleware d'authentification pour Express.
+passport-local est une stratégie d'authentification pour Passport qui utilise un nom d'utilisateur et un mot de passe pour l'authentification.
+
+---
+
+Un Guard 
+En général, le middleware UseGuards dans NestJS est utilisé 
+pour protéger les routes en vérifiant si l'utilisateur a les 
+droits d'accès nécessaires pour accéder à la ressource demandée. 
+Cela peut inclure la vérification des autorisations d'utilisateur
+telles que les rôles, les permissions, les jetons d'authentification, 
+etc.
+
+--- 
+Les strategies
+Les stratégies d'authentification dans NestJS sont utilisées pour simplifier 
+et standardiser le processus d'authentification dans une application. Plutôt
+ que de gérer manuellement chaque étape de l'authentification, 
+ comme la validation des informations d'identification de l'utilisateur, 
+ la gestion des sessions et la gestion des jetons d'accès, les stratégies 
+ d'authentification fournissent une solution simple et réutilisable pour ces tâches.
+
+En utilisant les stratégies d'authentification, vous pouvez facilement ajouter
+ différents types d'authentification à votre application, tels que la connexion
+  sociale (Facebook, Google, etc.), l'authentification basée sur un jeton et
+   l'authentification basée sur un nom d'utilisateur / mot de passe. Les stratégies
+    permettent également de séparer les préoccupations, de sorte que les fonctions
+     spécifiques à l'authentification peuvent être gérées dans une classe séparée,
+      plutôt que d'être intégrées directement dans les contrôleurs ou les services.
+
+En somme, l'utilisation de stratégies d'authentification dans NestJS simplifie 
+grandement le processus d'authentification pour une application, et permet une
+ plus grande réutilisabilité du code pour la gestion de l'authentification.
+
+--------------------------------------------------------------------------------
+ERROR HANDLER
+--------------------------------------------------------------------------------
+Le rôle d'un gestionnaire d'erreurs (error handler) dans une application est de 
+traiter les erreurs qui se produisent lors de l'exécution du code et de renvoyer 
+une réponse appropriée au client.
+
+En somme, le gestionnaire d'erreurs est un élément essentiel pour garantir que les
+utilisateurs de l'application reçoivent des réponses cohérentes et compréhensibles
+en cas d'erreur, tout en aidant les développeurs à résoudre les problèmes plus 
+rapidement.
